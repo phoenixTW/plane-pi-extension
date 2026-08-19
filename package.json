@@ -1,0 +1,26 @@
+{
+  "name": "plane-pi-tools",
+  "version": "0.1.0",
+  "description": "Pi extension: Plane (cloud + self-hosted) tools with multi-profile support",
+  "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "src/"
+  ],
+  "keywords": [
+    "plane",
+    "pi",
+    "pi-package",
+    "tools"
+  ],
+  "pi": {
+    "extensions": [
+      "./index.js"
+    ]
+  },
+  "license": "MIT"
+}
