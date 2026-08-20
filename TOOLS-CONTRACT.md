@@ -1,16 +1,11 @@
 # Tool Module Contract
 
 One file per Plane resource in `src/tools/`. Each module is a direct port of the
-matching Python module in plane-mcp-server, against REST endpoints taken from the
-plane-sdk.
-
-## Sources
-
-- MCP tool modules (actions, params, validation, footers):
-  `/tmp/plane-mcp-server/plane_mcp/tools/<resource>.py`
-- REST endpoint shapes (paths, methods, bodies):
-  `~/.cache/uv/archive-v0/-dPyaCKSETaSzi4qa2Jof/lib/python3.13/site-packages/plane/api/`
-- PQL reference text: `/tmp/plane-mcp-server/plane_mcp/pql_reference.py`
+matching Python module in
+[plane-mcp-server](https://github.com/makeplane/plane-mcp-server)
+(`plane_mcp/tools/<resource>.py`), against REST endpoints taken from the
+[plane-sdk](https://pypi.org/project/plane-sdk/) (`plane/api/` in the installed
+package — `pip install plane-sdk` or browse the PyPI sdist).
 
 ## Module shape
 

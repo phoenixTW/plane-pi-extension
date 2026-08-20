@@ -1,42 +1,109 @@
 # plane-pi-tools
 
 A [pi coding agent](https://github.com/earendil-works/pi-coding-agent) extension
-for [Plane](https://plane.so) — the project planning tool. Works with **Plane
-Cloud** and **self-hosted Plane** through switchable profiles.
+for [Plane](https://plane.so) — bring your Plane projects, work items, cycles,
+releases and more directly into your coding agent. Works with **Plane Cloud**
+and **self-hosted Plane** through switchable profiles.
 
-Ported from [plane-mcp-server](https://github.com/makeplane/plane-mcp-server):
-28 tools (one per Plane resource), 183 actions, dispatched via an `action`
-parameter. Work item filtering uses PQL (Plane Query Language); a dedicated
-reference tool teaches the model the syntax.
+28 tools, one per Plane resource, 183 actions — a port of the official
+[plane-mcp-server](https://github.com/makeplane/plane-mcp-server) tool surface
+for pi.
 
-## What you can do with it
+## Quickstart
 
-Inside a pi session, ask naturally — the model picks tools and actions:
-
-- "Show all urgent work items in the ENG project that are still started"
-- "Create a bug `Fix login redirect` in ENG, priority urgent, assign to me"
-- "What did PROG-142 change? Pull its activity"
-- "Add PROG-142 to the current cycle"
-- "List releases for progresify and show the changelog of the latest"
-- "Compare open work item counts across our cloud and self-hosted workspaces"
-
-Every tool description embeds its action catalog (required/optional params,
-read-only/destructive flags), so the model self-corrects instead of guessing.
-
-## Install
+### 1. Install
 
 ```bash
-# from a local checkout
-pi install /path/to/plane-pi-extension
-
-# from git (private repo: use an SSH-remote URL you can clone)
-pi install git:github.com:phoenixTW/plane-pi-extension
-
-# try without installing
-pi -e /path/to/plane-pi-extension/index.js
+pi install git:github.com/phoenixTW/plane-pi-extension
 ```
 
-No npm dependencies — plain Node ESM (Node >= 18).
+That is the whole installation. Pi clones the repo, registers the extension,
+and the tools are available in every new `pi` session.
+
+<details>
+<summary>Other install options</summary>
+
+```bash
+# HTTPS URL
+pi install https://github.com/phoenixTW/plane-pi-extension
+
+# SSH (if you prefer SSH credentials)
+pi install git:git@github.com:phoenixTW/plane-pi-extension
+
+# Try it once without installing
+pi -e git:github.com/phoenixTW/plane-pi-extension
+
+# From a local checkout
+pi install /path/to/plane-pi-extension
+
+# Project-local install (shared with your team via .pi/settings.json)
+pi install -l git:github.com/phoenixTW/plane-pi-extension
+```
+
+</details>
+
+> The repository is currently **private**. Anyone who can clone it can install
+> it. Make it public first if you want truly external users to install without
+> repo access.
+
+To update later: `pi update --extensions`. To remove: `pi remove` and pick the
+package from the list.
+
+### 2. Get a Plane API key
+
+In Plane: **Workspace Settings → API tokens → Create token**.
+
+Both token kinds work:
+
+| Token | Where | Scope |
+|---|---|---|
+| Workspace API token | Workspace Settings → API tokens | One workspace |
+| Personal access token (PAT) | Your profile settings | Your account; starts with `plane_api_` |
+
+Either is passed the same way — the extension only needs the string.
+
+### 3. Create a profile
+
+Start `pi` and run:
+
+```
+/plane-profile
+```
+
+Pick `add` and answer the prompts:
+
+- **Profile name** — any short name, e.g. `cloud`, `progresify`
+- **Base URL** — press Enter for Plane Cloud, or type your self-hosted URL
+  (e.g. `https://plane.example.com`)
+- **API key** — paste the token
+- **Workspace slug** — the slug in your Plane URL, e.g. `acme` in
+  `plane.so/acme`
+
+The extension tests the connection immediately: a green message confirms the
+workspace; a red one tells you whether the **key** was rejected or the
+**workspace slug** is wrong, so you know exactly what to fix.
+
+First profile becomes the default automatically. Add as many as you like:
+
+```
+/plane-profile add mycompany      # self-hosted
+/plane-profile default mycompany  # switch default
+/plane-profile list               # see them all
+```
+
+### 4. Use it
+
+Just ask in a pi session:
+
+```
+> list my plane projects
+> show all urgent started work items in PLAT
+> create a bug "Fix login redirect" in PLAT, priority urgent
+> what did PROG-142 change? pull its activity
+> add PROG-142 to the current cycle
+```
+
+The agent picks the right tool and action. No special syntax to learn.
 
 ## Profiles
 
@@ -45,47 +112,30 @@ A profile binds one Plane endpoint to one workspace:
 | Field | Meaning |
 |---|---|
 | `name` | Profile key, used by `/plane-profile` and the `profile` tool param |
-| `baseUrl` | API root. Empty/omitted = Plane Cloud (`https://api.plane.so`). Self-hosted = your Plane host, e.g. `https://plane.example.com` |
-| `apiKey` | API token. Plane → **Workspace Settings → API tokens** |
+| `baseUrl` | API root. Empty = Plane Cloud (`https://api.plane.so`). Self-hosted = your Plane host |
+| `apiKey` | API token (workspace token or PAT, both work) |
 | `workspaceSlug` | Workspace slug the token belongs to |
 
-Stored at `~/.pi/agent/extensions/plane-pi-tools/settings.json`, written with
-mode `0600`. No environment variables are read; the key lives only in the
-profile.
+Stored at `~/.pi/agent/extensions/plane-pi-tools/settings.json`, file mode
+`0600`. Keys never leave your machine; the extension reads no environment
+variables and makes no telemetry calls.
 
-Example:
+### Profile selection
 
-```json
-{
-  "schemaVersion": 1,
-  "defaultProfile": "plane-cloud",
-  "profiles": {
-    "plane-cloud": {
-      "name": "plane-cloud",
-      "baseUrl": "https://api.plane.so",
-      "apiKey": "paste_token",
-      "workspaceSlug": "myteam"
-    },
-    "progresify": {
-      "name": "progresify",
-      "baseUrl": "https://plane.progresify.internal",
-      "apiKey": "paste_token",
-      "workspaceSlug": "progresify"
-    }
-  }
-}
+1. Tool call with `profile: "progresify"` → uses that profile.
+2. Tool call without `profile` → uses the default profile.
+3. No default, or unknown name → the agent gets an error naming the available
+   profiles and self-corrects on the next call.
+
+This enables cross-instance questions:
+
+```
+> how many open items on cloud vs mycompany?
 ```
 
-### Profile selection rules
+The agent runs one count per profile and compares.
 
-1. Tool call with `profile: "progresify"` → uses `progresify`.
-2. Tool call without `profile` → uses the default profile.
-3. No default set → error naming available profiles (self-correcting).
-4. No profiles at all → error pointing at `/plane-profile`.
-
-`plane_get_pql_reference` is the only tool that never touches a profile.
-
-### Managing profiles
+### /plane-profile reference
 
 ```
 /plane-profile                interactive menu
@@ -94,13 +144,11 @@ Example:
 /plane-profile default [name]
 /plane-profile remove [name]
 /plane-profile test [name]
-/plane-profile show [name]
+/plane-profile show [name]    # API key redacted
 ```
 
-`add` prompts for name → base URL (empty = cloud) → API key → workspace slug,
-tests the connection (`GET /api/v1/workspaces/{slug}/`), then offers to make
-the profile the default. `show` and `list` redact the API key (`abcd...wxyz`).
-All prompts use blocking dialogs, so they also work over RPC sessions.
+All prompts use blocking dialogs, so they also work over RPC/headless sessions
+with a UI attached.
 
 ## Tools
 
@@ -135,58 +183,22 @@ All prompts use blocking dialogs, so they also work over RPC sessions.
 | `plane_workitem_type` | Work item types | list, retrieve, resolve, create, update, delete, import_to_project |
 | `plane_get_pql_reference` | PQL syntax reference | read |
 
-## Usage examples
+Work item filtering uses **PQL** (Plane Query Language). The
+`plane_get_pql_reference` tool carries the full syntax reference, so the agent
+composes filters itself — and when a filter is invalid, the error response
+points at the reference for a corrected retry.
 
-Query with PQL (model composes the filter itself):
+## Troubleshooting
 
-```
-> urgent started items in the ENG project
-→ plane_workitem action=list project_id=<uuid>
-  pql='state__group = "started" AND priority = "urgent"'
-```
-
-Look up by human identifier:
-
-```
-> what is PROG-142?
-→ plane_workitem action=retrieve_by_identifier workitem_identifier=PROG-142
-```
-
-Create and organize:
-
-```
-> file a bug "Login redirect loops on Safari" in ENG, urgent, then add it to the current cycle
-→ plane_workitem action=create ...
-→ plane_cycle action=manage_workitems ...
-```
-
-Cross-profile comparison (the reason every tool takes `profile`):
-
-```
-> how many open items on plane-cloud vs progresify?
-→ plane_workitem action=count profile=plane-cloud ...
-→ plane_workitem action=count profile=progresify ...
-```
-
-PQL self-correction: an invalid filter returns a structured error plus a hint
-to consult the reference, so the model retries with corrected syntax instead of
-failing the turn.
-
-## Behavior details
-
-- **Endpoints**: `{baseUrl}/api/v1/workspaces/{slug}/...` with `X-Api-Key`
-  auth — identical API shape for cloud and self-hosted.
-- **Pagination**: actions that take a `cursor` return the full envelope
-  (`results`, `next_cursor`, `total_count`, ...) so the model can page through.
-- **Validation**: missing required params return `Error: action 'x' requires:
-  a, b.` strings — the model's self-correction channel, mirroring the MCP
-  server.
-- **Plan gates**: HTTP 402 (plan-gated feature) becomes a message naming the
-  gated feature, not a raw stack trace.
-- **Timeouts**: 30 s per request, aborted cleanly; network failures report the
-  cause.
-- **Destructive actions** (`delete`, and others) are flagged in tool
-  descriptions; pi's confirmation flow still applies at the harness level.
+| Symptom | Cause / fix |
+|---|---|
+| `API key rejected` during `/plane-profile add` or on calls | Token wrong, expired, or deactivated. Create a fresh one in Workspace Settings → API tokens. |
+| `API key is valid but workspace X is not reachable` | Wrong workspace slug — copy it from your Plane URL. |
+| `no Plane profiles configured` | Run `/plane-profile` and add one. |
+| `no default profile set` | `/plane-profile default <name>`, or pass `profile` explicitly. |
+| `... is not available on this workspace's plan` | Feature is plan-gated on Plane Cloud or your self-hosted license. |
+| 404 on a resource | Some resources need feature flags enabled for the project (e.g. releases). |
+| Requests hang | 30 s timeout per request; check the base URL is reachable from your machine. |
 
 ## Development
 
@@ -199,16 +211,15 @@ src/toolkit.js            action catalogs, validation, envelopes, plan gates
 src/tools/*.js            28 resource modules, one per Plane resource
 ```
 
-Adding a resource: copy the matching module from
-[plane-mcp-server](https://github.com/makeplane/plane-mcp-server), follow
-`TOOLS-CONTRACT.md`, import it in `index.js`. Every module exports `name`,
-`title`, `summary`, `actions`, `parameters`, `handler`; `index.js` injects the
-`profile` param uniformly.
+No dependencies — plain Node ESM, Node >= 18. Adding a resource: follow
+`TOOLS-CONTRACT.md`, port the matching module from
+[plane-mcp-server](https://github.com/makeplane/plane-mcp-server), import it in
+`index.js`.
 
-Test loading without installing:
+Test without installing:
 
 ```bash
-pi -e ./index.js -p "Reply with only: ok"
+pi -e /path/to/plane-pi-extension/index.js -p "Reply with only: ok"
 ```
 
 ## License
