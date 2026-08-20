@@ -111,6 +111,7 @@ A profile binds one Plane endpoint to one workspace:
 | `baseUrl` | API root. Empty = Plane Cloud (`https://api.plane.so`). Self-hosted = your Plane host |
 | `apiKey` | API token (workspace token or PAT, both work) |
 | `workspaceSlug` | Workspace slug the token belongs to |
+| `headers` | Optional extra headers on every request — e.g. Cloudflare Access `CF-Access-Client-Id`/`-Secret` for self-hosted behind Access |
 
 Stored at `~/.pi/agent/extensions/plane-pi-tools/settings.json`, file mode
 `0600`. Keys never leave your machine; the extension reads no environment

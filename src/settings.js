@@ -22,11 +22,17 @@ function normalizeBaseUrl(url) {
 
 export function normalizeProfile(name, input) {
   const baseUrl = normalizeBaseUrl(input.baseUrl || CLOUD_BASE_URL);
+  const headers = {};
+  for (const [k, v] of Object.entries(input.headers || {})) {
+    const key = String(k).trim();
+    if (key) headers[key] = String(v).trim();
+  }
   return {
     name,
     baseUrl,
     apiKey: (input.apiKey || "").trim(),
     workspaceSlug: (input.workspaceSlug || "").trim(),
+    headers,
     createdAt: input.createdAt || new Date().toISOString(),
   };
 }

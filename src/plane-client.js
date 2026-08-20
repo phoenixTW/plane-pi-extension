@@ -8,10 +8,11 @@ export class PlaneApiError extends Error {
 }
 
 export class PlaneClient {
-  constructor({ baseUrl, apiKey, workspaceSlug, timeoutMs = 30000 }) {
+  constructor({ baseUrl, apiKey, workspaceSlug, headers = {}, timeoutMs = 30000 }) {
     this.baseUrl = baseUrl.replace(/\/+$/, "");
     this.apiKey = apiKey;
     this.workspaceSlug = workspaceSlug;
+    this.headers = headers;
     this.timeoutMs = timeoutMs;
   }
 
@@ -48,6 +49,7 @@ export class PlaneClient {
         headers: {
           "Content-Type": "application/json",
           "X-Api-Key": this.apiKey,
+          ...this.headers,
         },
         body: body === undefined ? undefined : JSON.stringify(body),
         signal: controller.signal,
