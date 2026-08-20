@@ -11,15 +11,29 @@ import { PlaneClient } from "./plane-client.js";
 async function testConnection(profile) {
   const client = new PlaneClient(profile);
   const started = Date.now();
-  const workspace = await client.get(client.wsPath());
-  return {
-    ok: true,
-    name: profile.name,
-    baseUrl: profile.baseUrl,
-    workspaceSlug: profile.workspaceSlug,
-    workspaceName: workspace?.name || profile.workspaceSlug,
-    elapsedMs: Date.now() - started,
-  };
+  try {
+    const features = await client.get(client.wsPath("features"));
+    return {
+      ok: true,
+      name: profile.name,
+      baseUrl: profile.baseUrl,
+      workspaceSlug: profile.workspaceSlug,
+      workspaceName: profile.workspaceSlug,
+      elapsedMs: Date.now() - started,
+      features,
+    };
+  } catch (err) {
+    try {
+      await client.get("users/me");
+    } catch (keyErr) {
+      throw new Error(
+        `API key rejected (${keyErr.status ? keyErr.message : keyErr.message}). Check Workspace Settings -> API tokens.`
+      );
+    }
+    throw new Error(
+      `API key is valid but workspace '${profile.workspaceSlug}' is not reachable (${err.message}). Check the workspace slug.`
+    );
+  }
 }
 
 function profileLines(settings) {
