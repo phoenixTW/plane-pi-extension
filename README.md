@@ -1,13 +1,13 @@
-# plane-pi-tools
+# plane-pi-extension
 
 A [pi coding agent](https://github.com/earendil-works/pi-coding-agent) extension
 for [Plane](https://plane.so) — bring your Plane projects, work items, cycles,
 releases and more directly into your coding agent. Works with **Plane Cloud**
 and **self-hosted Plane** through switchable profiles.
 
-28 tools, one per Plane resource, 183 actions — a port of the official
-[plane-mcp-server](https://github.com/makeplane/plane-mcp-server) tool surface
-for pi.
+28 tools, one per Plane resource, 183 actions — inspired by the official
+[plane-mcp-server](https://github.com/makeplane/plane-mcp-server) tool surface,
+built for pi.
 
 ## Quickstart
 
@@ -220,6 +220,6 @@ pi -e /path/to/plane-pi-extension/index.js -p "Reply with only: ok"
 
 ## License
 
-[MIT](LICENSE). Ported from
+[MIT](LICENSE). Inspired by
 [plane-mcp-server](https://github.com/makeplane/plane-mcp-server) (MIT);
 action catalogs and the PQL reference derive from that project.

@@ -1,6 +1,6 @@
 # Tool Module Contract
 
-One file per Plane resource in `src/tools/`. Each module is a direct port of the
+One file per Plane resource in `src/tools/`. Each module follows the
 matching Python module in
 [plane-mcp-server](https://github.com/makeplane/plane-mcp-server)
 (`plane_mcp/tools/<resource>.py`), against REST endpoints taken from the
@@ -49,7 +49,7 @@ export async function handler(args, plane) { ... }
 - Endpoints with a `cursor` param MUST return `envelope(response, fields)`.
 - Invalid-PQL 400s on workitem/cycle/module list actions: use
   `pqlFailure(name, action, pql, err)` in a catch, rethrow when null.
-- Port action notes, footers, enum validation (`oneOf`) verbatim from Python.
+- Port action notes, footers, enum validation (`oneOf`) from the Python source.
 - Skip LEGACY action aliases entirely.
 - No comments in code. No blank-line padding beyond normal style.
 
