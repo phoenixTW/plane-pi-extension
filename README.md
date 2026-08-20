@@ -42,10 +42,6 @@ pi install -l git:github.com/phoenixTW/plane-pi-extension
 
 </details>
 
-> The repository is currently **private**. Anyone who can clone it can install
-> it. Make it public first if you want truly external users to install without
-> repo access.
-
 To update later: `pi update --extensions`. To remove: `pi remove` and pick the
 package from the list.
 
@@ -224,4 +220,6 @@ pi -e /path/to/plane-pi-extension/index.js -p "Reply with only: ok"
 
 ## License
 
-MIT
+[MIT](LICENSE). Ported from
+[plane-mcp-server](https://github.com/makeplane/plane-mcp-server) (MIT);
+action catalogs and the PQL reference derive from that project.
