@@ -7,6 +7,25 @@ export class PlaneApiError extends Error {
   }
 }
 
+const SELF_HOSTED_GAP_PATHS = [
+  "work-item-relation-definitions",
+  "work-item-relations",
+  "dependencies",
+  "estimates",
+  "features",
+];
+
+function selfHostedGapHint(path) {
+  const cleaned = path.replace(/^\/+|\/+$/g, "");
+  if (!SELF_HOSTED_GAP_PATHS.some((gap) => cleaned.includes(gap))) return "";
+  return (
+    " If the ids used are valid, this endpoint is commonly absent from" +
+    " self-hosted Plane external APIs (relations, estimates, feature flags)." +
+    " Check the instance version; parent-child hierarchy is still available" +
+    " via plane_workitem update parent."
+  );
+}
+
 export class PlaneClient {
   constructor({ baseUrl, apiKey, workspaceSlug, headers = {}, timeoutMs = 30000 }) {
     this.baseUrl = baseUrl.replace(/\/+$/, "");
@@ -79,7 +98,8 @@ export class PlaneClient {
       const reason = payload && typeof payload === "object" && payload.error
         ? typeof payload.error === "string" ? payload.error : JSON.stringify(payload.error)
         : response.statusText;
-      throw new PlaneApiError(`HTTP ${response.status}: ${reason}`, response.status, payload);
+      const hint = response.status === 404 ? selfHostedGapHint(path) : "";
+      throw new PlaneApiError(`HTTP ${response.status}: ${reason}${hint}`, response.status, payload);
     }
 
     return payload;

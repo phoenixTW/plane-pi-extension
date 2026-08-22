@@ -12,28 +12,40 @@ async function testConnection(profile) {
   const client = new PlaneClient(profile);
   const started = Date.now();
   try {
-    const features = await client.get(client.wsPath("features"));
-    return {
-      ok: true,
-      name: profile.name,
-      baseUrl: profile.baseUrl,
-      workspaceSlug: profile.workspaceSlug,
-      workspaceName: profile.workspaceSlug,
-      elapsedMs: Date.now() - started,
-      features,
-    };
+    await client.get("users/me");
   } catch (err) {
-    try {
-      await client.get("users/me");
-    } catch (keyErr) {
-      throw new Error(
-        `API key rejected (${keyErr.status ? keyErr.message : keyErr.message}). Check Workspace Settings -> API tokens.`
-      );
-    }
+    throw new Error(
+      `API key rejected (${err.message}). Check Workspace Settings -> API tokens.`
+    );
+  }
+  let totalProjects = null;
+  try {
+    const projects = await client.get(client.wsPath("projects"), { per_page: 1 });
+    totalProjects = typeof projects.total_count === "number" ? projects.total_count : null;
+  } catch (err) {
     throw new Error(
       `API key is valid but workspace '${profile.workspaceSlug}' is not reachable (${err.message}). Check the workspace slug.`
     );
   }
+  let features = null;
+  let featuresSupported = true;
+  try {
+    features = await client.get(client.wsPath("features"));
+  } catch {
+    features = null;
+    featuresSupported = false;
+  }
+  return {
+    ok: true,
+    name: profile.name,
+    baseUrl: profile.baseUrl,
+    workspaceSlug: profile.workspaceSlug,
+    workspaceName: profile.workspaceSlug,
+    elapsedMs: Date.now() - started,
+    features,
+    featuresSupported,
+    totalProjects,
+  };
 }
 
 function profileLines(settings) {
@@ -91,7 +103,8 @@ async function promptAdd(ctx, presetName) {
   ctx.ui.notify(`Testing connection to ${profile.baseUrl}...`, "info");
   try {
     const result = await testConnection(profile);
-    ctx.ui.notify(`Connected: workspace '${result.workspaceName}' (${result.elapsedMs}ms)`, "success");
+    const gapNote = result.featuresSupported ? "" : " (feature-flag endpoints unavailable on this instance)";
+    ctx.ui.notify(`Connected: workspace '${result.workspaceName}' (${result.elapsedMs}ms)${gapNote}`, "success");
   } catch (err) {
     const proceed = await ctx.ui.confirm(
       "Connection failed",
@@ -183,7 +196,8 @@ async function promptTest(ctx, presetName) {
   ctx.ui.notify(`Testing '${name}'...`, "info");
   try {
     const result = await testConnection(settings.profiles[name]);
-    ctx.ui.notify(`OK: workspace '${result.workspaceName}' at ${result.baseUrl} (${result.elapsedMs}ms)`, "success");
+    const gapNote = result.featuresSupported ? "" : " (feature-flag endpoints unavailable on this instance)";
+    ctx.ui.notify(`OK: workspace '${result.workspaceName}' at ${result.baseUrl} (${result.elapsedMs}ms)${gapNote}`, "success");
   } catch (err) {
     ctx.ui.notify(`Failed: ${err.message}`, "error");
   }
