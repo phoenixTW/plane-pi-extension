@@ -185,6 +185,24 @@ Work item filtering uses **PQL** (Plane Query Language). The
 composes filters itself — and when a filter is invalid, the error response
 points at the reference for a corrected retry.
 
+## Self-hosted capability gaps
+
+Verified against a live self-hosted instance (`v1.4.1`/`preview`), not assumption.
+`plane_workitem_relation`, `plane_project_estimate`, `plane_workspace` and
+`plane_project` return a clear self-hosted-specific error instead of a bare 404
+where these apply:
+
+| Capability | Cloud | Self-hosted | Why |
+|---|---|---|---|
+| Relations: list, create built-in dependency | yes | yes | `relations` route exists; self-hosted uses a single combined endpoint and the `issues` body field instead of Cloud's split `dependencies`/`work-item-relations` calls |
+| Relations: delete | yes | **no** | self-hosted `relations` route only registers `GET`/`POST` -- no delete route exists server-side. Remove the relation from the Plane web UI instead |
+| Custom relation definitions | yes | **no** | `work-item-relation-definitions` absent from self-hosted OSS at every version checked |
+| `plane_project_estimate` (estimates) | yes | **no** | route code exists in self-hosted (`api/urls/estimate.py`) but is never imported into `urls/__init__.py` -- upstream dead code, not a version gap |
+| Workspace/project feature flags (`get_features`/`update_features`) | yes | **no** | `features` endpoint absent from self-hosted OSS |
+
+These are permanent gaps in self-hosted Plane, not bugs in this extension --
+the tools short-circuit with an explanation instead of round-tripping a 404.
+
 ## Troubleshooting
 
 | Symptom | Cause / fix |

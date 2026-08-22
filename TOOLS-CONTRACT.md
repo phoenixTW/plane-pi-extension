@@ -32,7 +32,10 @@ export const parameters = {
 export async function handler(args, plane) { ... }
 ```
 
-- `plane` = `{ client, workspaceSlug, profileName }`.
+- `plane` = `{ client, workspaceSlug, profileName, isSelfHosted }`. `isSelfHosted`
+  is `resolved.profile.baseUrl !== CLOUD_BASE_URL` -- branch on it for any
+  endpoint self-hosted Plane implements differently or not at all (see the
+  capability table in `README.md`), instead of letting the request 404.
 - `client` is a PlaneClient: `get(path, query)`, `post(path, body, query)`,
   `patch(path, body)`, `put(path, body)`, `del(path, body, query)`. Paths are
   relative to `{baseUrl}/api/v1/`, and the client always appends a trailing

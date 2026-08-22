@@ -1,4 +1,4 @@
-import { loadSettings, resolveProfileSettings } from "./src/settings.js";
+import { loadSettings, resolveProfileSettings, CLOUD_BASE_URL } from "./src/settings.js";
 import { PlaneClient, PlaneApiError } from "./src/plane-client.js";
 import { buildDescription, planRequired } from "./src/toolkit.js";
 import { registerProfileCommand } from "./src/profiles-command.js";
@@ -97,6 +97,7 @@ function registerPlaneTool(pi, tool) {
       let client = null;
       let workspaceSlug = null;
       let profileName = null;
+      let isSelfHosted = false;
       if (!tool.noProfile) {
         const settings = await loadSettings();
         const resolved = resolveProfileSettings(settings, params.profile);
@@ -106,12 +107,14 @@ function registerPlaneTool(pi, tool) {
         client = new PlaneClient(resolved.profile);
         workspaceSlug = resolved.profile.workspaceSlug;
         profileName = resolved.profile.name;
+        isSelfHosted = resolved.profile.baseUrl !== CLOUD_BASE_URL;
       }
       try {
         const result = await tool.handler(params, {
           client,
           workspaceSlug,
           profileName,
+          isSelfHosted,
         });
         const text = typeof result === "string" ? result : JSON.stringify(result, null, 2);
         return { content: [{ type: "text", text }], details: {} };

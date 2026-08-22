@@ -1,3 +1,5 @@
+import { CLOUD_BASE_URL } from "./settings.js";
+
 export class PlaneApiError extends Error {
   constructor(message, status, payload) {
     super(message);
@@ -7,23 +9,28 @@ export class PlaneApiError extends Error {
   }
 }
 
-const SELF_HOSTED_GAP_PATHS = [
+const CLOUD_ONLY_PATHS = [
   "work-item-relation-definitions",
   "work-item-relations",
   "dependencies",
-  "estimates",
   "features",
 ];
 
+const UPSTREAM_BUG_PATHS = ["estimates"];
+
 function selfHostedGapHint(path) {
   const cleaned = path.replace(/^\/+|\/+$/g, "");
-  if (!SELF_HOSTED_GAP_PATHS.some((gap) => cleaned.includes(gap))) return "";
-  return (
-    " If the ids used are valid, this endpoint is commonly absent from" +
-    " self-hosted Plane external APIs (relations, estimates, feature flags)." +
-    " Check the instance version; parent-child hierarchy is still available" +
-    " via plane_workitem update parent."
-  );
+  if (CLOUD_ONLY_PATHS.some((gap) => cleaned.includes(gap))) {
+    return " This endpoint is Cloud-only -- self-hosted Plane never implements it.";
+  }
+  if (UPSTREAM_BUG_PATHS.some((gap) => cleaned.includes(gap))) {
+    return (
+      " self-hosted Plane has this route's code but urls/__init__.py never" +
+      " wires it in (upstream bug present through at least v1.4.1/preview) --" +
+      " not fixable from here."
+    );
+  }
+  return "";
 }
 
 export class PlaneClient {
@@ -98,7 +105,7 @@ export class PlaneClient {
       const reason = payload && typeof payload === "object" && payload.error
         ? typeof payload.error === "string" ? payload.error : JSON.stringify(payload.error)
         : response.statusText;
-      const hint = response.status === 404 ? selfHostedGapHint(path) : "";
+      const hint = response.status === 404 && this.baseUrl !== CLOUD_BASE_URL ? selfHostedGapHint(path) : "";
       throw new PlaneApiError(`HTTP ${response.status}: ${reason}${hint}`, response.status, payload);
     }
 

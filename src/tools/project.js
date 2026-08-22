@@ -86,8 +86,10 @@ function isValidTimezone(timezone) {
   }
 }
 
+const CLOUD_ONLY_FEATURES = "Error: project feature flags are Cloud-only; self-hosted Plane doesn't support this.";
+
 export async function handler(args, plane) {
-  const { client } = plane;
+  const { client, isSelfHosted } = plane;
   const {
     action, project_id, name, identifier, description, project_lead,
     default_assignee, emoji, cover_image, network, timezone, archive_in,
@@ -199,6 +201,10 @@ export async function handler(args, plane) {
 
   if (action === "worklog_summary") {
     return client.get(client.wsPath(`projects/${project_id}/total-worklogs`));
+  }
+
+  if ((action === "get_features" || action === "update_features") && isSelfHosted) {
+    return CLOUD_ONLY_FEATURES;
   }
 
   if (action === "get_features") {

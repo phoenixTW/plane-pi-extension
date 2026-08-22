@@ -25,10 +25,14 @@ export const parameters = {
   required: ["action"],
 };
 
+const CLOUD_ONLY_FEATURES = "Error: workspace feature flags are Cloud-only; self-hosted Plane doesn't support this.";
+
 export async function handler(args, plane) {
-  const { client } = plane;
+  const { client, isSelfHosted } = plane;
   const { action, ...flags } = args;
   delete flags.profile;
+
+  if (isSelfHosted) return CLOUD_ONLY_FEATURES;
 
   if (action === "get_features") {
     return client.get(client.wsPath("features"));

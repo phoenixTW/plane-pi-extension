@@ -17,6 +17,13 @@ const OTHER_RELATIONS =
   "For any other relationship pass relation_definition_id and " +
   "relation_definition_label from the list_definitions action.";
 
+const CLOUD_ONLY_DEFINITIONS =
+  "Error: custom relation definitions are Cloud-only; self-hosted Plane doesn't support this.";
+
+const SELF_HOSTED_NO_DELETE =
+  "Error: self-hosted Plane's relations API has no delete route (GET/POST only, " +
+  "confirmed in v1.4.1 and preview). Remove the relation from the Plane web UI instead.";
+
 export const actions = [
   { name: "list", requires: ["project_id", "workitem_id"], optional: [], read: true },
   { name: "create", requires: ["project_id", "workitem_id", "workitem_ids"], optional: ["relation_type", "relation_definition_id", "relation_definition_label"], note: "pass relation_type for a dependency, or definition id + label for a custom relation" },
@@ -86,7 +93,7 @@ function definitionBody(args) {
 }
 
 export async function handler(args, plane) {
-  const { client } = plane;
+  const { client, isSelfHosted } = plane;
   const {
     action,
     project_id,
@@ -104,10 +111,17 @@ export async function handler(args, plane) {
   } = args;
 
   if (action === "list_definitions") {
+    if (isSelfHosted) {
+      return { built_in_dependencies: [...DEPENDENCY_TYPES], custom_definitions: [], note: CLOUD_ONLY_DEFINITIONS };
+    }
     return {
       built_in_dependencies: [...DEPENDENCY_TYPES],
       custom_definitions: await allDefinitions(client, plane.workspaceSlug, is_default, is_active),
     };
+  }
+
+  if (["create_definition", "update_definition", "delete_definition"].includes(action)) {
+    if (isSelfHosted) return CLOUD_ONLY_DEFINITIONS;
   }
 
   if (action === "create_definition") {
@@ -124,12 +138,15 @@ export async function handler(args, plane) {
     return client.del(path);
   }
 
+  if (action === "delete" && isSelfHosted) return SELF_HOSTED_NO_DELETE;
+
   const absent = needs(action, { project_id, workitem_id });
   if (absent) return absent;
 
   const basePath = client.wsPath(`projects/${project_id}/work-items/${workitem_id}`);
 
   if (action === "list") {
+    if (isSelfHosted) return client.get(`${basePath}/relations`);
     const dependencies = await client.get(`${basePath}/dependencies`);
     const custom = await client.get(`${basePath}/work-item-relations`);
     return { dependencies, custom };
@@ -141,12 +158,16 @@ export async function handler(args, plane) {
     if (relation_type) {
       const typeError = oneOf("relation_type", relation_type, DEPENDENCY_TYPES, OTHER_RELATIONS);
       if (typeError) return typeError;
+      if (isSelfHosted) {
+        return client.post(`${basePath}/relations`, { relation_type: relation_type, issues: targets });
+      }
       return client.post(`${basePath}/dependencies`, {
         relation_type: relation_type,
         work_item_ids: targets,
       });
     }
     if (relation_definition_id && relation_definition_label) {
+      if (isSelfHosted) return CLOUD_ONLY_DEFINITIONS;
       return client.post(`${basePath}/work-item-relations`, {
         relation_definition_id: relation_definition_id,
         relation_definition_type: relation_definition_label,
